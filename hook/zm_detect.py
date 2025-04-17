@@ -4,13 +4,19 @@
 # look at pyzm.ml for different detectors
 
 from __future__ import division
-import sys
 #lets do this _after_ log init so we log it
 #import cv2
+
 import argparse
 import datetime
 import os
 import traceback
+
+import ssl
+import json
+import time
+import subprocess
+import ast 
 
 # Modules that load cv2 will go later 
 # so we can log misses
@@ -22,14 +28,15 @@ auth_header = None
 
 __app_version__ = '6.1.29'
 
+
 def remote_detect(stream=None, options=None, api=None, args=None):
     # This uses mlapi (https://github.com/pliablepixels/mlapi) to run inferencing and converts format to what is required by the rest of the code.
 
     import numpy as np
     import requests
-    import cv2
     import json
     import time
+    import imutils
     
     bbox = []
     label = []
@@ -85,7 +92,7 @@ def remote_detect(stream=None, options=None, api=None, args=None):
         access_token = data.get('access_token')
         if not access_token:
             raise ValueError('Error getting remote API token {}'.format(data))
-            return
+        
         g.logger.Debug(2, 'Writing new token for future use')
         with open(data_file, 'w') as json_file:
             wdata = {
@@ -101,6 +108,9 @@ def remote_detect(stream=None, options=None, api=None, args=None):
     params = {'delete': True, 'response_format': 'zm_detect'}
 
     if args.get('file'):
+        import cv2
+        g.logger.Debug(1, '---------| OpenCV:{} |------------'.format(cv2.__version__))
+
         g.logger.Debug(2, 'Reading image from {}'.format(args.get('file')))
         image = cv2.imread(args.get('file'))
         if g.config['resize'] and g.config['resize'] != 'no':
@@ -268,22 +278,8 @@ def main_handler():
     except:
         pass
 
-    try:
-        import cv2
-    except ImportError as e:
-        g.logger.Fatal('{}: You might not have installed OpenCV as per install instructions. Remember, it is NOT automatically installed'.format(e))
-
-    g.logger.Debug(1, '---------| app:{}, pyzm:{}, ES:{} , OpenCV:{}|------------'.format(__app_version__, pyzm_version, es_version, cv2.__version__))
+    g.logger.Debug(1, '---------| app:{}, pyzm:{}, ES:{} |------------'.format(__app_version__, pyzm_version, es_version))
    
-    import re
-    import imutils
-    import ssl
-    import pickle
-    import json
-    import time
-    import requests
-    import subprocess
-    import ast 
 
     # load modules that depend on cv2
     try:
@@ -304,13 +300,13 @@ def main_handler():
         except FileExistsError:
             pass  # if two detects run together with a race here
 
-    if not g.config['ml_gateway']:
-        g.logger.Debug(1, 'Importing local classes for Object/Face')
-        import pyzm.ml.object as object_detection
-       
-    else:
-        g.logger.Debug(1, 'Importing remote shim classes for Object/Face')
-        from zmes_hook_helpers.apigw import ObjectRemote, FaceRemote, AlprRemote
+    #if not g.config['ml_gateway']:
+    #    g.logger.Debug(1, 'Importing local classes for Object/Face')
+    #    import pyzm.ml.object as object_detection
+    #   
+    #else:
+    #    g.logger.Debug(1, 'Importing remote shim classes for Object/Face')
+    #    from zmes_hook_helpers.apigw import ObjectRemote, FaceRemote, AlprRemote
     # now download image(s)
 
     start = datetime.datetime.now()
@@ -485,6 +481,9 @@ def main_handler():
                                               write_conf=True if g.config['show_percent'] == 'yes' else False )
 
             if g.config['write_debug_image'] == 'yes':
+                import cv2
+                g.logger.Debug(1, '---------| OpenCV:{} |------------'.format(cv2.__version__))
+
                 for _b in matched_data['error_boxes']:
                     cv2.rectangle(debug_image, (_b[0], _b[1]), (_b[2], _b[3]),
                         (0,0,255), 1)
@@ -493,6 +492,9 @@ def main_handler():
                 cv2.imwrite(filename_debug,debug_image)
 
             if g.config['write_image_to_zm'] == 'yes' and args.get('eventpath'):
+                import cv2
+                g.logger.Debug(1, '---------| OpenCV:{} |------------'.format(cv2.__version__))
+
                 g.logger.Debug(1, 'Writing detected image to {}/objdetect.jpg'.format(
                     args.get('eventpath')))
                 cv2.imwrite(args.get('eventpath') + '/objdetect.jpg', debug_image)

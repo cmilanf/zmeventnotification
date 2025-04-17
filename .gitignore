@@ -1,5 +1,6 @@
 **/.DS_Store
 images/*
+**/.venv
 # general things to ignore
 build/
 out/

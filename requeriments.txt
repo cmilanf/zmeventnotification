@@ -1,0 +1,5 @@
+numpy
+requests
+imutils
+opencv-python
+pyzm
